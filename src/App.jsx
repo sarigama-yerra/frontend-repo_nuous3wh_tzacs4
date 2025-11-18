@@ -1,73 +1,251 @@
-function App() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Subtle pattern overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05),transparent_50%)]"></div>
+import { useEffect, useMemo, useState } from 'react'
+import Navbar from './components/Navbar'
+import ArticleCard from './components/ArticleCard'
+import ProjectCard from './components/ProjectCard'
 
-      <div className="relative min-h-screen flex items-center justify-center p-8">
-        <div className="max-w-2xl w-full">
-          {/* Header with Flames icon */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center mb-6">
-              <img
-                src="/flame-icon.svg"
-                alt="Flames"
-                className="w-24 h-24 drop-shadow-[0_0_25px_rgba(59,130,246,0.5)]"
+const API_BASE = import.meta.env.VITE_BACKEND_URL || ''
+
+export default function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [articles, setArticles] = useState([])
+  const [projects, setProjects] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const [query, setQuery] = useState('')
+  const [region, setRegion] = useState('')
+  const [category, setCategory] = useState('')
+  const [tag, setTag] = useState('')
+
+  const qs = useMemo(() => {
+    const p = new URLSearchParams()
+    if (query) p.set('q', query)
+    if (region) p.set('region', region)
+    if (category) p.set('category', category)
+    if (tag) p.set('tag', tag)
+    return p.toString()
+  }, [query, region, category, tag])
+
+  const fetchAll = async () => {
+    try {
+      setLoading(true)
+      setError('')
+      const [aRes, pRes] = await Promise.all([
+        fetch(`${API_BASE}/api/articles?${qs}`),
+        fetch(`${API_BASE}/api/projects`),
+      ])
+      if (!aRes.ok) throw new Error('Failed to load articles')
+      if (!pRes.ok) throw new Error('Failed to load projects')
+      const [aData, pData] = await Promise.all([aRes.json(), pRes.json()])
+      setArticles(aData)
+      setProjects(pData)
+    } catch (e) {
+      setError(e.message || 'Something went wrong')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qs])
+
+  return (
+    <div className="min-h-screen bg-slate-900">
+      <Navbar onToggleSidebar={() => setSidebarOpen((s) => !s)} />
+
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        {/* Filters & Quick Add */}
+        <section className="mb-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <input
+                placeholder="Search headlines or content..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                placeholder="Region (e.g., Global, USA, EU)"
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                placeholder="Category (e.g., Elections)"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                placeholder="Tag (e.g., economy)"
+                value={tag}
+                onChange={(e) => setTag(e.target.value)}
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-
-            <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">
-              Flames Blue
-            </h1>
-
-            <p className="text-xl text-blue-200 mb-6">
-              Build applications through conversation
-            </p>
           </div>
 
-          {/* Instructions */}
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-blue-500/20 rounded-2xl p-8 shadow-xl mb-6">
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                1
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Describe your idea</h3>
-                <p className="text-blue-200/80 text-sm">Use the chat panel on the left to tell the AI what you want to build</p>
-              </div>
-            </div>
+          <QuickAdd onAdded={fetchAll} />
+        </section>
 
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                2
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Watch it build</h3>
-                <p className="text-blue-200/80 text-sm">Your app will appear in this preview as the AI generates the code</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                3
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Refine and iterate</h3>
-                <p className="text-blue-200/80 text-sm">Continue the conversation to add features and make changes</p>
-              </div>
-            </div>
+        {/* Articles */}
+        <section className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-white font-semibold text-xl">Latest Articles</h2>
+            <span className="text-slate-400 text-sm">{articles.length} results</span>
           </div>
+          {loading ? (
+            <div className="text-slate-300">Loading...</div>
+          ) : error ? (
+            <div className="text-red-300">{error}</div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {articles.map((a) => (
+                <ArticleCard key={a.id} article={a} />
+              ))}
+            </div>
+          )}
+        </section>
 
-          {/* Footer */}
-          <div className="text-center">
-            <p className="text-sm text-blue-300/60">
-              No coding required • Just describe what you want
-            </p>
+        {/* Projects */}
+        <section id="projects" className="mb-10">
+          <h2 className="text-white font-semibold text-xl mb-4">Projects</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map((p) => (
+              <ProjectCard key={p.id} project={p} />
+            ))}
           </div>
-        </div>
-      </div>
+        </section>
+
+        {/* About */}
+        <section id="about" className="mb-16 bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+          <h2 className="text-white font-semibold text-xl mb-2">About</h2>
+          <p className="text-slate-300 text-sm">
+            Independent coverage and analysis of politics around the world. Use the quick-add panel to easily publish new articles and showcase related projects.
+          </p>
+        </section>
+      </main>
     </div>
   )
 }
 
-export default App
+function QuickAdd({ onAdded }) {
+  const [tab, setTab] = useState('article')
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  // Article fields
+  const [title, setTitle] = useState('')
+  const [summary, setSummary] = useState('')
+  const [content, setContent] = useState('')
+  const [category, setCategory] = useState('')
+  const [region, setRegion] = useState('')
+  const [tags, setTags] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+
+  // Project fields
+  const [projName, setProjName] = useState('')
+  const [projDesc, setProjDesc] = useState('')
+  const [projLink, setProjLink] = useState('')
+  const [projTags, setProjTags] = useState('')
+
+  const reset = () => {
+    setTitle(''); setSummary(''); setContent(''); setCategory(''); setRegion(''); setTags(''); setImageUrl('')
+    setProjName(''); setProjDesc(''); setProjLink(''); setProjTags('')
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      setSaving(true)
+      setMsg('')
+      if (tab === 'article') {
+        const payload = {
+          title, summary, content, category, region,
+          tags: tags ? tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+          image_url: imageUrl || undefined,
+          published: true,
+        }
+        const res = await fetch(`${API_BASE}/api/articles`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (!res.ok) throw new Error('Failed to add article')
+        setMsg('Article published!')
+        reset()
+        onAdded?.()
+      } else {
+        const payload = {
+          name: projName,
+          description: projDesc,
+          link: projLink || undefined,
+          tags: projTags ? projTags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+          status: 'active',
+        }
+        const res = await fetch(`${API_BASE}/api/projects`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (!res.ok) throw new Error('Failed to add project')
+        setMsg('Project added!')
+        reset()
+        onAdded?.()
+      }
+    } catch (e) {
+      setMsg(e.message || 'Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+      <div className="flex items-center gap-4 mb-4">
+        <button
+          className={`px-3 py-1.5 rounded-md text-sm ${tab==='article' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-700'}`}
+          onClick={() => setTab('article')}
+        >
+          Add Article
+        </button>
+        <button
+          className={`px-3 py-1.5 rounded-md text-sm ${tab==='project' ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-700'}`}
+          onClick={() => setTab('project')}
+        >
+          Add Project
+        </button>
+        {msg && <span className="text-slate-300 text-sm">{msg}</span>}
+      </div>
+
+      {tab === 'article' ? (
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3">
+          <input value={title} onChange={(e)=>setTitle(e.target.value)} placeholder="Title" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+          <input value={summary} onChange={(e)=>setSummary(e.target.value)} placeholder="Summary" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <textarea value={content} onChange={(e)=>setContent(e.target.value)} placeholder="Content" rows={4} className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+          <div className="grid sm:grid-cols-2 gap-3">
+            <input value={category} onChange={(e)=>setCategory(e.target.value)} placeholder="Category" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+            <input value={region} onChange={(e)=>setRegion(e.target.value)} placeholder="Region" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+          </div>
+          <input value={tags} onChange={(e)=>setTags(e.target.value)} placeholder="Tags (comma separated)" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input value={imageUrl} onChange={(e)=>setImageUrl(e.target.value)} placeholder="Image URL (optional)" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <button disabled={saving} className="inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 text-sm font-medium disabled:opacity-50">
+            {saving ? 'Publishing...' : 'Publish'}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3">
+          <input value={projName} onChange={(e)=>setProjName(e.target.value)} placeholder="Project Name" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+          <textarea value={projDesc} onChange={(e)=>setProjDesc(e.target.value)} placeholder="Description" rows={3} className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+          <input value={projLink} onChange={(e)=>setProjLink(e.target.value)} placeholder="Link (optional)" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input value={projTags} onChange={(e)=>setProjTags(e.target.value)} placeholder="Tags (comma separated)" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <button disabled={saving} className="inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 text-sm font-medium disabled:opacity-50">
+            {saving ? 'Saving...' : 'Save Project'}
+          </button>
+        </form>
+      )}
+    </div>
+  )
+}
