@@ -6,29 +6,36 @@ import ProjectCard from './components/ProjectCard'
 const API_BASE = import.meta.env.VITE_BACKEND_URL || ''
 const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || ''
 
+// Updated regions and categories per your request
 const REGIONS = [
-  'Noord-Amerika (Verenigde Staten, Canada)',
-  'Midden-Amerika & Caraïben',
-  'Zuid-Amerika (Latijns-Amerika)',
-  'West-Europa (Oude EU-kern: Frankrijk, Duitsland, Benelux, etc.)',
-  'Noord- & Scandinavië (Scandinavische en Baltische landen)',
-  'Zuid-Europa & de Balkan (Oostelijke EU, Griekenland, Italië)',
-  'Rusland & Eurazië (Russische Federatie en voormalige Sovjetrepublieken)',
-  'Midden-Oosten',
-  'Noord-Afrika',
-  'Sub-Sahara West- en Centraal-Afrika',
-  'Oost-Afrika & Hoorn van Afrika',
-  'Zuid-Azië, Oost-Azië, Zuidoost-Azië',
-  'Oceanië & Australazië'
+  'North-Amerika',
+  'Central-Amerika & Caraïben',
+  'South-Amerika',
+  'West-Europe',
+  'North & Sandinavië',
+  'South-Europe & the Balkans',
+  'Russia & Eurasia',
+  'Middle-East',
+  'Northern-Afrika',
+  'Sub-Saharan West- and Central-Afrika',
+  'East-Afrika & Horn of Africa',
+  'South-Asia',
+  'East-Asia',
+  'Southeast-Asia',
+  'Oceania & Australasia'
 ]
 
 const CATEGORIES = [
-  'Elections',
-  'Policy',
-  'Geopolitics',
+  'Ongoing',
+  'Counted',
+  'Conflict',
   'Economy',
-  'Security',
-  'Society',
+  'campaign',
+  'statement',
+  'congress',
+  'Elections',
+  'Coalition',
+  'budget',
 ]
 
 export default function App() {
@@ -264,7 +271,7 @@ function QuickAdd({ onAdded }) {
               <option value="" disabled>Select category</option>
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select value={region} onChange={(e)=>setRegion(e.target.value)} className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <select value={region} onChange={(e)=>setRegion(e.target.value)} className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
               <option value="" disabled>Select region</option>
               {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
