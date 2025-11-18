@@ -4,6 +4,32 @@ import ArticleCard from './components/ArticleCard'
 import ProjectCard from './components/ProjectCard'
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || ''
+const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || ''
+
+const REGIONS = [
+  'Noord-Amerika (Verenigde Staten, Canada)',
+  'Midden-Amerika & Caraïben',
+  'Zuid-Amerika (Latijns-Amerika)',
+  'West-Europa (Oude EU-kern: Frankrijk, Duitsland, Benelux, etc.)',
+  'Noord- & Scandinavië (Scandinavische en Baltische landen)',
+  'Zuid-Europa & de Balkan (Oostelijke EU, Griekenland, Italië)',
+  'Rusland & Eurazië (Russische Federatie en voormalige Sovjetrepublieken)',
+  'Midden-Oosten',
+  'Noord-Afrika',
+  'Sub-Sahara West- en Centraal-Afrika',
+  'Oost-Afrika & Hoorn van Afrika',
+  'Zuid-Azië, Oost-Azië, Zuidoost-Azië',
+  'Oceanië & Australazië'
+]
+
+const CATEGORIES = [
+  'Elections',
+  'Policy',
+  'Geopolitics',
+  'Economy',
+  'Security',
+  'Society',
+]
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -15,16 +41,14 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [region, setRegion] = useState('')
   const [category, setCategory] = useState('')
-  const [tag, setTag] = useState('')
 
   const qs = useMemo(() => {
     const p = new URLSearchParams()
     if (query) p.set('q', query)
     if (region) p.set('region', region)
     if (category) p.set('category', category)
-    if (tag) p.set('tag', tag)
     return p.toString()
-  }, [query, region, category, tag])
+  }, [query, region, category])
 
   const fetchAll = async () => {
     try {
@@ -51,6 +75,8 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qs])
 
+  const ownerMode = Boolean(ADMIN_TOKEN)
+
   return (
     <div className="min-h-screen bg-slate-900">
       <Navbar onToggleSidebar={() => setSidebarOpen((s) => !s)} />
@@ -66,28 +92,36 @@ export default function App() {
                 onChange={(e) => setQuery(e.target.value)}
                 className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <input
-                placeholder="Region (e.g., Global, USA, EU)"
+              <select
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                placeholder="Category (e.g., Elections)"
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All regions</option>
+                {REGIONS.map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+              <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                placeholder="Tag (e.g., economy)"
-                value={tag}
-                onChange={(e) => setTag(e.target.value)}
-                className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All categories</option>
+                {CATEGORIES.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => { setQuery(''); setRegion(''); setCategory('') }}
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+              >
+                Reset
+              </button>
             </div>
           </div>
 
-          <QuickAdd onAdded={fetchAll} />
+          {ownerMode && <QuickAdd onAdded={fetchAll} />}
         </section>
 
         {/* Articles */}
@@ -170,7 +204,7 @@ function QuickAdd({ onAdded }) {
         }
         const res = await fetch(`${API_BASE}/api/articles`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Token': ADMIN_TOKEN },
           body: JSON.stringify(payload),
         })
         if (!res.ok) throw new Error('Failed to add article')
@@ -187,7 +221,7 @@ function QuickAdd({ onAdded }) {
         }
         const res = await fetch(`${API_BASE}/api/projects`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Token': ADMIN_TOKEN },
           body: JSON.stringify(payload),
         })
         if (!res.ok) throw new Error('Failed to add project')
@@ -226,8 +260,14 @@ function QuickAdd({ onAdded }) {
           <input value={summary} onChange={(e)=>setSummary(e.target.value)} placeholder="Summary" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <textarea value={content} onChange={(e)=>setContent(e.target.value)} placeholder="Content" rows={4} className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
           <div className="grid sm:grid-cols-2 gap-3">
-            <input value={category} onChange={(e)=>setCategory(e.target.value)} placeholder="Category" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-            <input value={region} onChange={(e)=>setRegion(e.target.value)} placeholder="Region" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+            <select value={category} onChange={(e)=>setCategory(e.target.value)} className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <option value="" disabled>Select category</option>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select value={region} onChange={(e)=>setRegion(e.target.value)} className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <option value="" disabled>Select region</option>
+              {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
           </div>
           <input value={tags} onChange={(e)=>setTags(e.target.value)} placeholder="Tags (comma separated)" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <input value={imageUrl} onChange={(e)=>setImageUrl(e.target.value)} placeholder="Image URL (optional)" className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -246,6 +286,8 @@ function QuickAdd({ onAdded }) {
           </button>
         </form>
       )}
+
+      <p className="mt-3 text-xs text-slate-400">Owner mode active</p>
     </div>
   )
 }
